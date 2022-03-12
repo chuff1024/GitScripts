@@ -1,6 +1,8 @@
-Set-Location C:\Users\harveym\Downloads\scripts
+Set-Location $scriptPath
 $host.ui.RawUI.WindowTitle= "Switch Port Monitor"
 $verbose= $true
+$snmpReadPass= "snmpReadPass"
+$snmpWritePass= "snmpWritePass"
 
 .\Send-Report.ps1 "Starting switch monitoring script..."
 
@@ -27,7 +29,7 @@ while (1)
         #get/arrange pertinent port data
         if ($verbose) {"checking $switch..."}
         if (!(Test-Connection -ComputerName $switch -Quiet -Count 1)) {continue}
-        $snmp.Open($switch,"ccspub",1,1000)
+        $snmp.Open($switch,$snmpReadPass,1,1000)
         $systemName= $snmp.get(".1.3.6.1.2.1.1.5.0")
         $poeArray= $snmp.gettree(".1.3.6.1.2.1.105.1.1.1.6")
         for ($i=0; $i -lt $poeArray.Length/2; $i++) {
@@ -48,7 +50,7 @@ while (1)
             if ($poeHash[$port] -ne 3) {continue}
             if ($macHash.Values -notcontains $port.Split(".")[-1]) {
                 .\Send-Report.ps1 "problem at port index $port on $systemName"
-                $snmp.Open($switch,"ccsnet",1,1000)
+                $snmp.Open($switch,$snmpWritePass,1,1000)
                 $snmp.Set(".1.3.6.1.2.1.105.1.1.1.3.$port",2)
                 Start-Sleep -Seconds 6
                 $snmp.Set(".1.3.6.1.2.1.105.1.1.1.3.$port",1)
